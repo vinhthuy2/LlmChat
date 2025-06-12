@@ -6,60 +6,70 @@ namespace LlmChat.Chat;
 
 public class ChatSessionStore : IChatSessionStore
 {
-    private readonly AppDbContext _dbContext;
-    private readonly ILoggingService _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILoggingService _loggingService;
 
-    public ChatSessionStore(AppDbContext dbContext, ILoggingService logger)
+    public ChatSessionStore(IServiceProvider serviceProvider, ILoggingService loggingService)
     {
-        _dbContext = dbContext;
-        _logger = logger;
+        _serviceProvider = serviceProvider;
+        _loggingService = loggingService;
     }
 
     public async Task<ChatSession?> GetSessionAsync(Guid id)
     {
-        _logger.LogDebug("Getting session {SessionId}", id);
-        return await _dbContext.ChatSessions.FindAsync(id);
+        _loggingService.LogDebug("Getting session {SessionId}", id);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await dbContext.ChatSessions.FindAsync(id);
     }
 
     public async Task SaveSessionAsync(Guid id, string content)
     {
-        _logger.LogDebug("Saving new session {SessionId}", id);
+        _loggingService.LogDebug("Saving new session {SessionId}", id);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var session = new ChatSession { Id = id, Content = content };
-        await _dbContext.ChatSessions.AddAsync(session);
-        await _dbContext.SaveChangesAsync();
+        await dbContext.ChatSessions.AddAsync(session);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task UpdateSessionAsync(Guid id, string content)
     {
-        _logger.LogDebug("Updating session {SessionId}", id);
-        var session = await _dbContext.ChatSessions.FindAsync(id);
+        _loggingService.LogDebug("Updating session {SessionId}", id);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var session = await dbContext.ChatSessions.FindAsync(id);
         if (session == null)
         {
-            _logger.LogWarning("Session {SessionId} not found for update", id);
+            _loggingService.LogWarning("Session {SessionId} not found for update", id);
             throw new InvalidOperationException($"Session {id} not found");
         }
-
         session.Content = content;
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task DeleteSessionAsync(Guid id)
     {
-        _logger.LogDebug("Deleting session {SessionId}", id);
-        var session = await _dbContext.ChatSessions.FindAsync(id);
-        if (session == null)
+        _loggingService.LogDebug("Deleting session {SessionId}", id);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var session = await dbContext.ChatSessions.FindAsync(id);
+        if (session != null)
         {
-            _logger.LogWarning("Session {SessionId} not found for deletion", id);
-            return;
+            dbContext.ChatSessions.Remove(session);
+            await dbContext.SaveChangesAsync();
         }
-
-        _dbContext.ChatSessions.Remove(session);
-        await _dbContext.SaveChangesAsync();
+        else
+        {
+            _loggingService.LogWarning("Session {SessionId} not found for deletion", id);
+        }
     }
 
     public async Task<IReadOnlyList<ChatSession>> GetSessionsAsync()
     {
-        _logger.LogDebug("Getting all sessions");
-        return await _dbContext.ChatSessions.ToListAsync();
+        _loggingService.LogDebug("Getting all sessions");
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await dbContext.ChatSessions.ToListAsync();
     }
 } 

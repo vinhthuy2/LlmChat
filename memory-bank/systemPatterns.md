@@ -21,6 +21,12 @@ The application follows a clean architecture approach with clear separation of c
    - Cross-cutting concerns
    - Logging system
 
+4. **Agents Layer** (Agents/)
+   - LLM integration
+   - Chat agent implementation
+   - Streaming support
+   - Session management
+
 ## Design Patterns
 
 ### Store Pattern
@@ -48,6 +54,15 @@ The application follows a clean architecture approach with clear separation of c
 - Log rotation
 - Context enrichment
 - Performance tracking
+- ILoggingService abstraction
+- LoggingService implementation
+
+### Testing Pattern
+- MSTest for test framework
+- NSubstitute for mocking
+- In-memory database for testing
+- Comprehensive unit tests
+- Integration test support
 
 ## Component Relationships
 
@@ -63,6 +78,9 @@ graph TD
     F --> G[Serilog]
     G --> H[Console]
     G --> I[File]
+    A --> J[OllamaAgent]
+    J --> B
+    J --> F
 ```
 
 ## Key Interfaces
@@ -70,10 +88,12 @@ graph TD
 2. `IChatSessionService`: Business logic contract
 3. `AppDbContext`: Data access abstraction
 4. `ILoggingService`: Logging abstraction
+5. `ILlmAgent`: LLM integration contract
 
 ## Error Handling
 - Exception handling in repositories
 - Exception handling in services
 - Graceful error responses
 - Session state management
-- Structured error logging 
+- Structured error logging
+- Test coverage for error scenarios 

@@ -28,6 +28,9 @@ LlmChat/
 │   ├── Data/        # Data access and repositories
 │   └── Logging/     # Logging system
 ├── Migrations/      # Database migrations
+├── Tests/           # Test projects
+│   ├── Chat/        # Chat service tests
+│   └── Infra/       # Infrastructure tests
 └── Program.cs       # Application entry point
 ```
 
@@ -54,6 +57,8 @@ LlmChat/
 4. Log file rotation enabled
 5. Ollama server required for LLM features
 6. Streaming response support required
+7. Unit test coverage required
+8. Integration test support required
 
 ## Development Workflow
 1. Local development with SQLite
@@ -63,4 +68,6 @@ LlmChat/
 5. Log monitoring via console and files
 6. Ollama server must be running for LLM features
 7. Unit testing with MSTest and NSubstitute
-8. Integration testing with in-memory database 
+8. Integration testing with in-memory database
+9. Test-driven development approach
+10. Continuous integration support 

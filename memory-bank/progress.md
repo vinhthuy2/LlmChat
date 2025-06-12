@@ -27,6 +27,8 @@
    - Repository logging
    - Service logging
    - Agent logging
+   - Logging service implementation
+   - Logging service tests
 
 4. **Architecture**
    - Clean architecture
@@ -41,6 +43,9 @@
    - Unit tests for services
    - Unit tests for stores
    - Unit tests for agents
+   - Unit tests for logging service
+   - Unit tests for chat session service
+   - Unit tests for chat session store
    - Integration tests for core functionality
 
 ## What's Left to Build
@@ -90,6 +95,7 @@
 - Ollama integration complete
 - Streaming support implemented
 - Basic test coverage achieved
+- Unit tests for core components implemented
 - Ready for enhancement phase
 
 ## Known Issues

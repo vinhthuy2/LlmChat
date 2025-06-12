@@ -7,6 +7,7 @@
 - Database persistence
 - API endpoint development
 - Ollama integration for LLM capabilities
+- Unit testing implementation
 
 ## Recent Changes
 1. Implemented ChatSessionRepository
@@ -22,6 +23,9 @@
 11. Added OllamaAgent for LLM integration
 12. Implemented streaming response support
 13. Added comprehensive test coverage for all components
+14. Added unit tests for LoggingService
+15. Added unit tests for ChatSessionService
+16. Added unit tests for ChatSessionStore
 
 ## Active Decisions
 1. Using Repository pattern for data access
@@ -31,6 +35,7 @@
 5. Clean architecture with clear separation of concerns
 6. Using Ollama for LLM capabilities
 7. Supporting both synchronous and streaming responses
+8. Using MSTest and NSubstitute for testing
 
 ## Current Considerations
 1. Extending logging to other components

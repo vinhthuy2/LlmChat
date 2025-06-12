@@ -24,7 +24,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data S
 builder.Services.AddSingleton<IChatSessionStore, ChatSessionStore>();
 builder.Services.AddScoped<IChatSessionService, ChatSessionService>();
 builder.Services.AddSingleton<ILlmAgent, OllamaAgent>();
-builder.Services.AddScoped<ILoggingService, LoggingService>();
+builder.Services.AddSingleton<ILoggingService, LoggingService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",

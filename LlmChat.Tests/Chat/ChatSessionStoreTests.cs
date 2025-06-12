@@ -2,6 +2,7 @@ using LlmChat.Chat;
 using LlmChat.Infra.Data;
 using LlmChat.Infra.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 
@@ -10,27 +11,29 @@ namespace LlmChat.Tests.Chat;
 [TestClass]
 public class ChatSessionStoreTests
 {
-    private AppDbContext _dbContext = null!;
+    private IServiceProvider _serviceProvider = null!;
     private ILoggingService _loggingService = null!;
     private ChatSessionStore _store = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _dbContext = new AppDbContext(options);
+        var services = new ServiceCollection();
+        var dbName = "ChatSessionStoreTestsDb";
+        services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase(dbName));
         _loggingService = Substitute.For<ILoggingService>();
-        _store = new ChatSessionStore(_dbContext, _loggingService);
+        services.AddSingleton(_loggingService);
+        _serviceProvider = services.BuildServiceProvider();
+        _store = new ChatSessionStore(_serviceProvider, _loggingService);
     }
 
     [TestCleanup]
     public void Cleanup()
     {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Dispose();
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Dispose();
     }
 
     [TestMethod]
@@ -39,8 +42,12 @@ public class ChatSessionStoreTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var session = new ChatSession { Id = sessionId, Content = "test content" };
-        await _dbContext.ChatSessions.AddAsync(session);
-        await _dbContext.SaveChangesAsync();
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.ChatSessions.AddAsync(session);
+            await dbContext.SaveChangesAsync();
+        }
 
         // Act
         var result = await _store.GetSessionAsync(sessionId);
@@ -77,7 +84,9 @@ public class ChatSessionStoreTests
         await _store.SaveSessionAsync(sessionId, content);
 
         // Assert
-        var savedSession = await _dbContext.ChatSessions.FindAsync(sessionId);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var savedSession = await dbContext.ChatSessions.FindAsync(sessionId);
         Assert.IsNotNull(savedSession);
         Assert.AreEqual(content, savedSession.Content);
         _loggingService.Received().LogDebug(Arg.Is<string>(s => s.Contains("Saving new session")), sessionId);
@@ -89,16 +98,24 @@ public class ChatSessionStoreTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var session = new ChatSession { Id = sessionId, Content = "old content" };
-        await _dbContext.ChatSessions.AddAsync(session);
-        await _dbContext.SaveChangesAsync();
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.ChatSessions.AddAsync(session);
+            await dbContext.SaveChangesAsync();
+        }
 
         // Act
         await _store.UpdateSessionAsync(sessionId, "new content");
 
         // Assert
-        var updatedSession = await _dbContext.ChatSessions.FindAsync(sessionId);
-        Assert.IsNotNull(updatedSession);
-        Assert.AreEqual("new content", updatedSession.Content);
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var updatedSession = await dbContext.ChatSessions.FindAsync(sessionId);
+            Assert.IsNotNull(updatedSession);
+            Assert.AreEqual("new content", updatedSession.Content);
+        }
         _loggingService.Received().LogDebug(Arg.Is<string>(s => s.Contains("Updating session")), sessionId);
     }
 
@@ -120,15 +137,23 @@ public class ChatSessionStoreTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var session = new ChatSession { Id = sessionId, Content = "test content" };
-        await _dbContext.ChatSessions.AddAsync(session);
-        await _dbContext.SaveChangesAsync();
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.ChatSessions.AddAsync(session);
+            await dbContext.SaveChangesAsync();
+        }
 
         // Act
         await _store.DeleteSessionAsync(sessionId);
 
         // Assert
-        var deletedSession = await _dbContext.ChatSessions.FindAsync(sessionId);
-        Assert.IsNull(deletedSession);
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var deletedSession = await dbContext.ChatSessions.FindAsync(sessionId);
+            Assert.IsNull(deletedSession);
+        }
         _loggingService.Received().LogDebug(Arg.Is<string>(s => s.Contains("Deleting session")), sessionId);
     }
 
@@ -155,8 +180,12 @@ public class ChatSessionStoreTests
             new ChatSession { Id = Guid.NewGuid(), Content = "content 2" },
             new ChatSession { Id = Guid.NewGuid(), Content = "content 3" }
         };
-        await _dbContext.ChatSessions.AddRangeAsync(sessions);
-        await _dbContext.SaveChangesAsync();
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.ChatSessions.AddRangeAsync(sessions);
+            await dbContext.SaveChangesAsync();
+        }
 
         // Act
         var result = await _store.GetSessionsAsync();
