@@ -7,3 +7,6 @@ obj/
 /node_modules
 /wwwroot/node_modules
 
+logs/
+*.log
+

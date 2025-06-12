@@ -1,6 +1,25 @@
 @LlmChat_HostAddress = http://localhost:5298
 
-GET {{LlmChat_HostAddress}}/weatherforecast/
+### LlmChat API - Send a chat message - GET sync response
+POST {{LlmChat_HostAddress}}/chat/
 Accept: application/json
+Content-Type: application/json
 
-###
+{
+    "content": "Hello, how are you?",
+    "role": "user"
+}
+
+### LlmChat API - Send a chat message and defer to get response stream
+POST {{LlmChat_HostAddress}}/chatDefer/
+Accept: application/json
+Content-Type: application/json
+
+{
+    "content": "Hello, how are you?",
+    "role": "user"
+}
+
+### LlmChat API - Get the next response chunk from a deferred chat message
+GET {{LlmChat_HostAddress}}/chatStream?sessionId={{}}
+
