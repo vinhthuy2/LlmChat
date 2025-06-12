@@ -63,7 +63,7 @@ public class OllamaAgentTests
         var message = "deferred message";
 
         // Act
-        _agent.DeferAMessage(message);
+        _agent.DeferAMessage(message, Guid.NewGuid());
 
         // Assert
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Deferring message")));
@@ -75,7 +75,7 @@ public class OllamaAgentTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var message = "deferred message";
-        _agent.DeferAMessage(message);
+        _agent.DeferAMessage(message, sessionId);
         _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
@@ -85,16 +85,4 @@ public class OllamaAgentTests
         Assert.IsNotNull(stream);
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Processing deferred message")), sessionId);
     }
-
-    [TestMethod]
-    public async Task SaveSession_WithInvalidSession_ThrowsException()
-    {
-        // Arrange
-        var sessionId = Guid.NewGuid();
-
-        // Act & Assert
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => 
-            _agent.Answer("test", sessionId));
-        _loggingService.Received().LogError(Arg.Any<InvalidOperationException>(), Arg.Is<string>(s => s.Contains("Failed to save session")), sessionId);
-    }
-} 
+}

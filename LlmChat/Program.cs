@@ -66,7 +66,8 @@ app.MapPost("/chat",
 app.MapPost("/chatDefer",
         (ILlmAgent llmAgent, ChatRequestDto chatRequest) =>
         {
-            llmAgent.DeferAMessage(chatRequest.Content);
+            var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
+            llmAgent.DeferAMessage(chatRequest.Content, sessionId);
             return chatRequest.SessionId ?? Guid.NewGuid();
         })
     .WithOpenApi();

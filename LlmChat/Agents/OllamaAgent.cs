@@ -36,17 +36,19 @@ public class OllamaAgent : ILlmAgent
         return response;
     }
 
-    public void DeferAMessage(string message)
+    public void DeferAMessage(string question, Guid sessionId)
     {
         _logger.LogInformation("Deferring message for later processing");
-        _pendingMessages[Guid.NewGuid()] = message;
+        _pendingMessages[sessionId] = question;
     }
 
     public async Task<IAsyncEnumerable<string>> StreamedAnswer(Guid sessionId)
     {
         if (!_pendingMessages.TryGetValue(sessionId, out var message))
         {
-            throw new InvalidOperationException($"No pending message found for session {sessionId}");
+            var ex = new InvalidOperationException($"No pending message found for session {sessionId}");
+            _logger.LogError(ex, "Failed to stream answer: No pending message for session {SessionId}", sessionId);
+            throw ex;
         }
 
         _logger.LogInformation("Processing deferred message for session {SessionId}", sessionId);

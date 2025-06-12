@@ -12,30 +12,35 @@ The application follows a clean architecture approach with clear separation of c
    - Chat session management
    - Business logic
    - Domain models
+   - Service interfaces
+   - Store interfaces
 
 3. **Infrastructure Layer** (Infra/)
    - Data persistence
-   - External service integration
+   - Store implementations
    - Cross-cutting concerns
    - Logging system
 
 ## Design Patterns
 
-### Repository Pattern
-- ChatSessionService implements chat session persistence
-- Entity Framework Core for data access
+### Store Pattern
+- IChatSessionStore defines session operations
+- ChatSessionStore implements session logic
+- Direct Entity Framework Core integration
+- SQLite for storage
+- Manages session state and persistence
+
+### Service Pattern
+- IChatSessionService defines business logic
+- ChatSessionService implements operations
+- Uses store for data access
+- Handles session management
 
 ### Dependency Injection
 - Services registered in Program.cs
 - Interface-based design for loose coupling
-
-### Streaming Pattern
-- Server-Sent Events for real-time responses
-- Asynchronous streaming with IAsyncEnumerable
-
-### Session Management
-- Unique session IDs for chat conversations
-- Persistent storage of chat history
+- Constructor injection
+- Scoped lifetime for services
 
 ### Logging Pattern
 - Structured logging with Serilog
@@ -49,26 +54,26 @@ The application follows a clean architecture approach with clear separation of c
 ```mermaid
 graph TD
     A[API Endpoints] --> B[ChatSessionService]
-    A --> C[OllamaAgent]
-    B --> D[AppDbContext]
-    C --> E[Ollama Service]
-    D --> F[SQLite Database]
-    A --> G[LoggingService]
-    B --> G
-    C --> G
-    G --> H[Serilog]
-    H --> I[Console]
-    H --> J[File]
+    B --> C[ChatSessionStore]
+    C --> D[AppDbContext]
+    D --> E[SQLite Database]
+    A --> F[LoggingService]
+    B --> F
+    C --> F
+    F --> G[Serilog]
+    G --> H[Console]
+    G --> I[File]
 ```
 
 ## Key Interfaces
-1. `ILlmAgent`: LLM interaction contract
-2. `IChatSessionService`: Chat session management
+1. `IChatSessionStore`: Session management contract
+2. `IChatSessionService`: Business logic contract
 3. `AppDbContext`: Data access abstraction
 4. `ILoggingService`: Logging abstraction
 
 ## Error Handling
-- Exception handling in streaming endpoints
+- Exception handling in repositories
+- Exception handling in services
 - Graceful error responses
 - Session state management
 - Structured error logging 
