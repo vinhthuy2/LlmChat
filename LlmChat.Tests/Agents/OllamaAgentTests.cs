@@ -1,7 +1,7 @@
+using FluentAssertions;
 using LlmChat.Agents;
 using LlmChat.Chat;
 using LlmChat.Infra.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using OllamaSharp;
 using OllamaSharp.Models.Chat;
@@ -11,16 +11,15 @@ namespace LlmChat.Tests.Agents;
 [TestClass]
 public class OllamaAgentTests
 {
-    private IChatSessionStore _store = null!;
-    private ILoggingService _loggingService = null!;
-    private OllamaAgent _agent = null!;
+    private readonly IChatSessionStore _store = Substitute.For<IChatSessionStore>();
+    private readonly ILoggingService _loggingService =  Substitute.For<ILoggingService>();
+    private readonly IOllamaApiClient _ollamaApiClient = Substitute.For<IOllamaApiClient>();
+    private readonly OllamaAgent sut;
 
-    [TestInitialize]
-    public void Setup()
+    public OllamaAgentTests()
     {
-        _store = Substitute.For<IChatSessionStore>();
-        _loggingService = Substitute.For<ILoggingService>();
-        _agent = new OllamaAgent(_store, _loggingService);
+        _ollamaApiClient.ChatAsync(Arg.Any<ChatRequest>()).ReturnsForAnyArgs(GetLlmResponses());
+        sut = new OllamaAgent(_store, _ollamaApiClient, _loggingService);
     }
 
     [TestMethod]
@@ -32,9 +31,10 @@ public class OllamaAgentTests
         _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        var result = await _agent.Answer(question, sessionId);
+        var result = await sut.Answer(question, sessionId);
 
         // Assert
+        result.Should().Be("hello from llm agent.");
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Processing answer")), sessionId);
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Answer completed")), sessionId);
     }
@@ -49,9 +49,10 @@ public class OllamaAgentTests
         _store.GetSessionAsync(sessionId).Returns(existingSession);
 
         // Act
-        var result = await _agent.Answer(question, sessionId);
+        var result = await sut.Answer(question, sessionId);
 
         // Assert
+        result.Should().Be("hello from llm agent.");
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Processing answer")), sessionId);
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Answer completed")), sessionId);
     }
@@ -63,7 +64,7 @@ public class OllamaAgentTests
         var message = "deferred message";
 
         // Act
-        _agent.DeferAMessage(message, Guid.NewGuid());
+        sut.DeferAMessage(message, Guid.NewGuid());
 
         // Assert
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Deferring message")));
@@ -75,14 +76,39 @@ public class OllamaAgentTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var message = "deferred message";
-        _agent.DeferAMessage(message, sessionId);
+        sut.DeferAMessage(message, sessionId);
         _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        var stream = await _agent.StreamedAnswer(sessionId);
+        var stream = await sut.StreamedAnswer(sessionId);
 
         // Assert
-        Assert.IsNotNull(stream);
+        stream.Should().NotBeNull();
+
+        var result = await stream.StreamToEndAsync();
+        result.Should().Be("hello from llm agent.");
+
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Processing deferred message")), sessionId);
+    }
+
+    public static async IAsyncEnumerable<ChatResponseStream?> GetLlmResponses()
+    {
+        yield return new ChatResponseStream()
+        {
+            Message = new Message(ChatRole.Assistant, "hello")
+        };
+
+        yield return new ChatResponseStream()
+        {
+            Message = new Message(ChatRole.Assistant, " from")
+        };
+
+        yield return new ChatResponseStream()
+        {
+            Message = new Message(ChatRole.Assistant, " llm agent."),
+            Done = true
+        };
+
+        await Task.CompletedTask; // to make the compiler warning go away
     }
 }

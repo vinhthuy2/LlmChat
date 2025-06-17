@@ -1,6 +1,5 @@
 using LlmChat.Chat;
 using LlmChat.Infra.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 
 namespace LlmChat.Tests.Chat;

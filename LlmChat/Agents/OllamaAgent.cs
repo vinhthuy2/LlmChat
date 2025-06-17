@@ -5,55 +5,42 @@ using OllamaSharp.Models.Chat;
 
 namespace LlmChat.Agents;
 
-public class OllamaAgent : ILlmAgent
+public class OllamaAgent(IChatSessionStore store, IOllamaApiClient chatClient, ILoggingService logger) : ILlmAgent
 {
-    private const string Uri = "http://localhost:11434";
-    private const string Model = "phi3";
-    private const string SystemPrompt = "You are a helpful assistant. Answer the user's questions based on the provided context.";
-    private readonly OllamaApiClient _client;
+    private const string SystemPrompt =
+        "You are an english learning buddy. " +
+        "We're playing role play. ";
     private readonly Dictionary<Guid, OllamaSharp.Chat> _conversationHistory = new();
     private readonly Dictionary<Guid, string> _pendingMessages = new();
-    private readonly IChatSessionStore _store;
-    private readonly ILoggingService _logger;
 
-    public OllamaAgent(IChatSessionStore store, ILoggingService logger)
+    public async Task<string> Answer(string question, Guid sessionId, string? _ = null)
     {
-        _store = store;
-        _logger = logger;
-        _client = new OllamaApiClient(new Uri(Uri));
-        _client.SelectedModel = Model;
-        _logger.LogInformation("OllamaAgent initialized with model {Model}", Model);
-    }
-
-    public async Task<string> Answer(string question, Guid sessionId)
-    {
-        _logger.LogInformation("Processing answer for session {SessionId}", sessionId);
+        logger.LogInformation("Processing answer for session {SessionId}", sessionId);
         var conversation = await GetOllamaChat(sessionId);
         var response = await conversation.SendAsAsync("user", question).StreamToEndAsync();
 
         await SaveSession(sessionId);
-        _logger.LogInformation("Answer completed for session {SessionId}", sessionId);
+        logger.LogInformation("Answer completed for session {SessionId}", sessionId);
         return response;
     }
 
-    public void DeferAMessage(string question, Guid sessionId)
+    public void DeferAMessage(string question, Guid sessionId, string? _ = null)
     {
-        _logger.LogInformation("Deferring message for later processing");
+        logger.LogInformation("Deferring message for later processing");
         _pendingMessages[sessionId] = question;
     }
 
     public async Task<IAsyncEnumerable<string>> StreamedAnswer(Guid sessionId)
     {
-        if (!_pendingMessages.TryGetValue(sessionId, out var message))
+        if (!_pendingMessages.Remove(sessionId, out var message))
         {
             var ex = new InvalidOperationException($"No pending message found for session {sessionId}");
-            _logger.LogError(ex, "Failed to stream answer: No pending message for session {SessionId}", sessionId);
+            logger.LogError(ex, "Failed to stream answer: No pending message for session {SessionId}", sessionId);
             throw ex;
         }
 
-        _logger.LogInformation("Processing deferred message for session {SessionId}", sessionId);
+        logger.LogInformation("Processing deferred message for session {SessionId}", sessionId);
         var conversation = await GetOllamaChat(sessionId);
-        _pendingMessages.Remove(sessionId);
         return conversation.SendAsAsync("user", message);
     }
 
@@ -64,31 +51,22 @@ public class OllamaAgent : ILlmAgent
             : await LoadSession(sessionId);
     }
 
-    private OllamaSharp.Chat CreateOllamaChat(ChatSession session)
-    {
-        _logger.LogDebug("Creating Ollama chat from session {SessionId}", session.Id);
-        var messages = session.Content.Split("|")
-            .Select(m => m.Split(":", 2))
-            .Select(ss => new Message(ss[0], ss[1]))
-            .ToList();
-
-        return new OllamaSharp.Chat(_client, SystemPrompt)
-        {
-            Messages = messages
-        };
-    }
-
     private async Task<OllamaSharp.Chat> LoadSession(Guid sessionId)
     {
-        _logger.LogInformation("Loading session {SessionId}", sessionId);
-        var session = await _store.GetSessionAsync(sessionId);
+        logger.LogInformation("Loading session {SessionId}", sessionId);
+        var conversation = new OllamaSharp.Chat(chatClient, SystemPrompt);
 
-        var conversation = session != null
-            ? CreateOllamaChat(session)
-            : new OllamaSharp.Chat(_client, SystemPrompt);
+        var session = await store.GetSessionAsync(sessionId);
+        if (session != null)
+        {
+            conversation.Messages = session.Content.Split("|")
+                .Select(m => m.Split(":", 2))
+                .Select(ss => new Message(ss[0], ss[1]))
+                .ToList();
+        }
 
         _conversationHistory[sessionId] = conversation;
-        _logger.LogInformation("Session {SessionId} loaded successfully", sessionId);
+        logger.LogInformation("Session {SessionId} loaded successfully", sessionId);
         return conversation;
     }
 
@@ -97,12 +75,12 @@ public class OllamaAgent : ILlmAgent
         if (!_conversationHistory.ContainsKey(sessionId))
         {
             var ex = new InvalidOperationException("Session not loaded or does not exist.");
-            _logger.LogError(ex, "Failed to save session {SessionId}: Session not loaded or does not exist", sessionId);
+            logger.LogError(ex, "Failed to save session {SessionId}: Session not loaded or does not exist", sessionId);
             throw ex;
         }
 
-        _logger.LogInformation("Saving session {SessionId}", sessionId);
+        logger.LogInformation("Saving session {SessionId}", sessionId);
         var content = string.Join("|", _conversationHistory[sessionId].Messages.Select(m => $"{m.Role}:{m.Content}"));
-        await _store.SaveSessionAsync(sessionId, content);
+        await store.SaveSessionAsync(sessionId, content);
     }
 }

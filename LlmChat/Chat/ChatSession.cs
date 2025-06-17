@@ -11,7 +11,7 @@ public class ChatSession
     public string Content { get; set; } = string.Empty;
 
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset LastUpdated { get; private set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
     public void AddMessage(string role, string message)
     {

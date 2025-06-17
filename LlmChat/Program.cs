@@ -22,8 +22,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=ChatLlm.db"));
 builder.Services.AddSingleton<IChatSessionStore, ChatSessionStore>();
+builder.Services.AddSingleton(OllamaClientFactory.Phi3Client());
 builder.Services.AddScoped<IChatSessionService, ChatSessionService>();
-builder.Services.AddSingleton<ILlmAgent, OllamaAgent>();
+builder.Services.AddSingleton<OllamaAgent>();
+builder.Services.AddSingleton<OllamaSupervisory>();
 builder.Services.AddSingleton<ILoggingService, LoggingService>();
 builder.Services.AddCors(options =>
 {
@@ -48,8 +50,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/chat",
-        async (ILlmAgent agent, ChatRequestDto chatRequest) =>
+app.MapPost("/api/chat",
+        async (OllamaAgent agent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
             var answer = await agent.Answer(chatRequest.Content, sessionId);
@@ -63,17 +65,17 @@ app.MapPost("/chat",
     .WithName("chat")
     .WithOpenApi();
 
-app.MapPost("/chatDefer",
-        (ILlmAgent llmAgent, ChatRequestDto chatRequest) =>
+app.MapPost("/api/chatDefer",
+        (OllamaAgent llmAgent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
             llmAgent.DeferAMessage(chatRequest.Content, sessionId);
-            return chatRequest.SessionId ?? Guid.NewGuid();
+            return Results.Json(sessionId);
         })
     .WithOpenApi();
 
-app.MapGet("/chatStream",
-        async ([FromQuery] Guid sessionId, ILlmAgent agent, HttpContext httpContext) =>
+app.MapGet("/api/chatStream",
+        async ([FromQuery] Guid sessionId, OllamaAgent agent, HttpContext httpContext) =>
         {
             httpContext.Response.ContentType = "text/event-stream";
             httpContext.Response.Headers.Append("Cache-Control", "no-cache");
@@ -83,11 +85,11 @@ app.MapGet("/chatStream",
                 var stream = await agent.StreamedAnswer(sessionId);
                 await foreach (var chunk in stream)
                 {
-                    await httpContext.Response.WriteAsync($"data: {chunk}\n\n");
+                    await httpContext.Response.WriteAsync($"data:{chunk}\n\n");
                     await httpContext.Response.Body.FlushAsync();
                 }
 
-                await httpContext.Response.WriteAsync("data: [done]\n\n");
+                await httpContext.Response.WriteAsync("data: [done]");
                 await httpContext.Response.Body.FlushAsync();
             }
             catch (Exception ex)
@@ -97,6 +99,14 @@ app.MapGet("/chatStream",
                 httpContext.Abort();
             }
         })
+    .WithOpenApi();
+
+app.MapPost("/api/supervisory",
+    async (OllamaSupervisory supervisory, OriginalMessageDto originalMessage) =>
+    {
+        var answer = await supervisory.Answer(originalMessage.Content, Guid.NewGuid(), originalMessage.ExtraSystemPrompt);
+        return Results.Json(new SupervisedMessageDto(answer));
+    })
     .WithOpenApi();
 
 app.Run();
