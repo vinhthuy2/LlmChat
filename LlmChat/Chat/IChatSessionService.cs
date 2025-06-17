@@ -2,6 +2,6 @@ namespace LlmChat.Chat;
 
 public interface IChatSessionService
 {
-    Task<ChatSession?> GetSession(Guid sessionId);
-    Task SaveSession(Guid sessionId, string sessionContent);
+    Task<ChatSession?> GetSessionAsync(Guid sessionId);
+    Task SaveSessionAsync(Guid sessionId, string sessionContent);
 }

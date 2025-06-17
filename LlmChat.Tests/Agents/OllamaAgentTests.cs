@@ -11,7 +11,7 @@ namespace LlmChat.Tests.Agents;
 [TestClass]
 public class OllamaAgentTests
 {
-    private readonly IChatSessionStore _store = Substitute.For<IChatSessionStore>();
+    private readonly IChatSessionService _chatSessionService = Substitute.For<IChatSessionService>();
     private readonly ILoggingService _loggingService =  Substitute.For<ILoggingService>();
     private readonly IOllamaApiClient _ollamaApiClient = Substitute.For<IOllamaApiClient>();
     private readonly OllamaAgent sut;
@@ -19,7 +19,7 @@ public class OllamaAgentTests
     public OllamaAgentTests()
     {
         _ollamaApiClient.ChatAsync(Arg.Any<ChatRequest>()).ReturnsForAnyArgs(GetLlmResponses());
-        sut = new OllamaAgent(_store, _ollamaApiClient, _loggingService);
+        sut = new OllamaAgent(_chatSessionService, _ollamaApiClient, _loggingService);
     }
 
     [TestMethod]
@@ -28,10 +28,10 @@ public class OllamaAgentTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var question = "test question";
-        _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
+        _chatSessionService.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        var result = await sut.Answer(question, sessionId);
+        var result = await sut.AnswerAsync(question, sessionId);
 
         // Assert
         result.Should().Be("hello from llm agent.");
@@ -46,10 +46,10 @@ public class OllamaAgentTests
         var sessionId = Guid.NewGuid();
         var question = "test question";
         var existingSession = new ChatSession { Id = sessionId, Content = "assistant:Hello|user:Hi" };
-        _store.GetSessionAsync(sessionId).Returns(existingSession);
+        _chatSessionService.GetSessionAsync(sessionId).Returns(existingSession);
 
         // Act
-        var result = await sut.Answer(question, sessionId);
+        var result = await sut.AnswerAsync(question, sessionId);
 
         // Assert
         result.Should().Be("hello from llm agent.");
@@ -64,7 +64,7 @@ public class OllamaAgentTests
         var message = "deferred message";
 
         // Act
-        sut.DeferAMessage(message, Guid.NewGuid());
+        sut.DeferAMessageAsync(message, Guid.NewGuid());
 
         // Assert
         _loggingService.Received().LogInformation(Arg.Is<string>(s => s.Contains("Deferring message")));
@@ -76,11 +76,11 @@ public class OllamaAgentTests
         // Arrange
         var sessionId = Guid.NewGuid();
         var message = "deferred message";
-        sut.DeferAMessage(message, sessionId);
-        _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
+        sut.DeferAMessageAsync(message, sessionId);
+        _chatSessionService.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        var stream = await sut.StreamedAnswer(sessionId);
+        var stream = await sut.StreamedAnswerAsync(sessionId);
 
         // Assert
         stream.Should().NotBeNull();

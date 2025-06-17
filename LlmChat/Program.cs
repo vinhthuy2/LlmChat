@@ -24,8 +24,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data S
 builder.Services.AddSingleton<IChatSessionStore, ChatSessionStore>();
 builder.Services.AddSingleton(OllamaClientFactory.Phi3Client());
 builder.Services.AddScoped<IChatSessionService, ChatSessionService>();
-builder.Services.AddSingleton<OllamaAgent>();
-builder.Services.AddSingleton<OllamaSupervisory>();
+builder.Services.AddSingleton<ILlmAgent, OllamaAgent>();
+builder.Services.AddSingleton<ILlmSupervisory, OllamaSupervisory>();
 builder.Services.AddSingleton<ILoggingService, LoggingService>();
 builder.Services.AddCors(options =>
 {
@@ -54,7 +54,7 @@ app.MapPost("/api/chat",
         async (OllamaAgent agent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
-            var answer = await agent.Answer(chatRequest.Content, sessionId);
+            var answer = await agent.AnswerAsync(chatRequest.Content, sessionId);
 
             return Results.Json(new ChatResponseDto(
                 answer,
@@ -69,7 +69,7 @@ app.MapPost("/api/chatDefer",
         (OllamaAgent llmAgent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
-            llmAgent.DeferAMessage(chatRequest.Content, sessionId);
+            llmAgent.DeferAMessageAsync(chatRequest.Content, sessionId);
             return Results.Json(sessionId);
         })
     .WithOpenApi();
@@ -82,7 +82,7 @@ app.MapGet("/api/chatStream",
 
             try
             {
-                var stream = await agent.StreamedAnswer(sessionId);
+                var stream = await agent.StreamedAnswerAsync(sessionId);
                 await foreach (var chunk in stream)
                 {
                     await httpContext.Response.WriteAsync($"data:{chunk}\n\n");
@@ -104,7 +104,7 @@ app.MapGet("/api/chatStream",
 app.MapPost("/api/supervisory",
     async (OllamaSupervisory supervisory, OriginalMessageDto originalMessage) =>
     {
-        var answer = await supervisory.Answer(originalMessage.Content, Guid.NewGuid(), originalMessage.ExtraSystemPrompt);
+        var answer = await supervisory.ReviseAsync(originalMessage.Content, Guid.NewGuid(), originalMessage.ExtraSystemPrompt);
         return Results.Json(new SupervisedMessageDto(answer));
     })
     .WithOpenApi();

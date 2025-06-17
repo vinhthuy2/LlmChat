@@ -28,7 +28,7 @@ public class ChatSessionServiceTests
         _store.GetSessionAsync(sessionId).Returns(session);
 
         // Act
-        var result = await _service.GetSession(sessionId);
+        var result = await _service.GetSessionAsync(sessionId);
 
         // Assert
         Assert.IsNotNull(result);
@@ -45,7 +45,7 @@ public class ChatSessionServiceTests
         _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        var result = await _service.GetSession(sessionId);
+        var result = await _service.GetSessionAsync(sessionId);
 
         // Assert
         Assert.IsNull(result);
@@ -61,7 +61,7 @@ public class ChatSessionServiceTests
         _store.GetSessionAsync(sessionId).Returns((ChatSession?)null);
 
         // Act
-        await _service.SaveSession(sessionId, content);
+        await _service.SaveSessionAsync(sessionId, content);
 
         // Assert
         await _store.Received().SaveSessionAsync(sessionId, content);
@@ -77,7 +77,7 @@ public class ChatSessionServiceTests
         _store.GetSessionAsync(sessionId).Returns(existingSession);
 
         // Act
-        await _service.SaveSession(sessionId, "new content");
+        await _service.SaveSessionAsync(sessionId, "new content");
 
         // Assert
         await _store.Received().UpdateSessionAsync(sessionId, "new content");

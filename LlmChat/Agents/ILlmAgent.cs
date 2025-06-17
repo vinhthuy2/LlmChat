@@ -2,9 +2,9 @@ namespace LlmChat.Agents;
 
 public interface ILlmAgent
 {
-    Task<string> Answer(string question, Guid sessionId, string? extraSystemPrompt = null);
+    Task<string> AnswerAsync(string sentence, Guid sessionId);
 
-    void DeferAMessage(string question, Guid sessionId, string? extraSystemPrompt = null);
+    void DeferAMessageAsync(string sentence, Guid sessionId);
 
-    Task<IAsyncEnumerable<string>> StreamedAnswer(Guid sessionId);
+    Task<IAsyncEnumerable<string>> StreamedAnswerAsync(Guid sessionId);
 }

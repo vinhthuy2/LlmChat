@@ -5,7 +5,7 @@ using OllamaSharp.Models.Chat;
 
 namespace LlmChat.Agents;
 
-public class OllamaAgent(IChatSessionStore store, IOllamaApiClient chatClient, ILoggingService logger) : ILlmAgent
+public class OllamaAgent(IChatSessionService chatSessionService, IOllamaApiClient chatClient, ILoggingService logger) : ILlmAgent
 {
     private const string SystemPrompt =
         "You are an english learning buddy. " +
@@ -13,24 +13,24 @@ public class OllamaAgent(IChatSessionStore store, IOllamaApiClient chatClient, I
     private readonly Dictionary<Guid, OllamaSharp.Chat> _conversationHistory = new();
     private readonly Dictionary<Guid, string> _pendingMessages = new();
 
-    public async Task<string> Answer(string question, Guid sessionId, string? _ = null)
+    public async Task<string> AnswerAsync(string sentence, Guid sessionId)
     {
         logger.LogInformation("Processing answer for session {SessionId}", sessionId);
         var conversation = await GetOllamaChat(sessionId);
-        var response = await conversation.SendAsAsync("user", question).StreamToEndAsync();
+        var response = await conversation.SendAsAsync("user", sentence).StreamToEndAsync();
 
         await SaveSession(sessionId);
         logger.LogInformation("Answer completed for session {SessionId}", sessionId);
         return response;
     }
 
-    public void DeferAMessage(string question, Guid sessionId, string? _ = null)
+    public void DeferAMessageAsync(string sentence, Guid sessionId)
     {
         logger.LogInformation("Deferring message for later processing");
-        _pendingMessages[sessionId] = question;
+        _pendingMessages[sessionId] = sentence;
     }
 
-    public async Task<IAsyncEnumerable<string>> StreamedAnswer(Guid sessionId)
+    public async Task<IAsyncEnumerable<string>> StreamedAnswerAsync(Guid sessionId)
     {
         if (!_pendingMessages.Remove(sessionId, out var message))
         {
@@ -56,7 +56,7 @@ public class OllamaAgent(IChatSessionStore store, IOllamaApiClient chatClient, I
         logger.LogInformation("Loading session {SessionId}", sessionId);
         var conversation = new OllamaSharp.Chat(chatClient, SystemPrompt);
 
-        var session = await store.GetSessionAsync(sessionId);
+        var session = await chatSessionService.GetSessionAsync(sessionId);
         if (session != null)
         {
             conversation.Messages = session.Content.Split("|")
@@ -81,6 +81,6 @@ public class OllamaAgent(IChatSessionStore store, IOllamaApiClient chatClient, I
 
         logger.LogInformation("Saving session {SessionId}", sessionId);
         var content = string.Join("|", _conversationHistory[sessionId].Messages.Select(m => $"{m.Role}:{m.Content}"));
-        await store.SaveSessionAsync(sessionId, content);
+        await chatSessionService.SaveSessionAsync(sessionId, content);
     }
 }
