@@ -89,7 +89,6 @@ app.MapGet("/api/chatStream",
                     await httpContext.Response.Body.FlushAsync();
                 }
 
-                await httpContext.Response.WriteAsync("data: [done]");
                 await httpContext.Response.Body.FlushAsync();
             }
             catch (Exception ex)

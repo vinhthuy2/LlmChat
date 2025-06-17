@@ -8,6 +8,8 @@
 - **Development Tools**: Visual Studio/Rider
 - **LLM Integration**: OllamaSharp
 - **Testing**: MSTest, NSubstitute
+- **Streaming**: Server-Sent Events
+- **Memory Management**: In-memory dictionaries
 
 ## Development Setup
 1. .NET 8.0 SDK
@@ -16,6 +18,7 @@
 4. Logs directory for file logging
 5. Ollama server running on localhost:11434
 6. Ollama model: phi3
+7. Streaming client support
 
 ## Project Structure
 ```
@@ -59,6 +62,8 @@ LlmChat/
 6. Streaming response support required
 7. Unit test coverage required
 8. Integration test support required
+9. In-memory conversation history
+10. Deferred message processing
 
 ## Development Workflow
 1. Local development with SQLite
@@ -70,4 +75,6 @@ LlmChat/
 7. Unit testing with MSTest and NSubstitute
 8. Integration testing with in-memory database
 9. Test-driven development approach
-10. Continuous integration support 
+10. Continuous integration support
+11. Streaming response testing
+12. Conversation history testing 

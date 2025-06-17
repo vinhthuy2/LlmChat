@@ -8,6 +8,7 @@
 - API endpoint development
 - Ollama integration for LLM capabilities
 - Unit testing implementation
+- English learning buddy role-play functionality
 
 ## Recent Changes
 1. Implemented ChatSessionRepository
@@ -26,6 +27,9 @@
 14. Added unit tests for LoggingService
 15. Added unit tests for ChatSessionService
 16. Added unit tests for ChatSessionStore
+17. Added English learning buddy system prompt
+18. Implemented conversation history management
+19. Added deferred message processing
 
 ## Active Decisions
 1. Using Repository pattern for data access
@@ -36,6 +40,8 @@
 6. Using Ollama for LLM capabilities
 7. Supporting both synchronous and streaming responses
 8. Using MSTest and NSubstitute for testing
+9. Using in-memory dictionaries for conversation history
+10. Implementing deferred message processing for streaming
 
 ## Current Considerations
 1. Extending logging to other components
@@ -46,6 +52,8 @@
 6. Error handling improvements
 7. Security implementation
 8. Rate limiting implementation
+9. Conversation history persistence strategy
+10. Message streaming optimization
 
 ## Next Steps
 1. Add logging to remaining components
@@ -58,6 +66,8 @@
 8. Add error handling middleware
 9. Add API documentation
 10. Implement security features
+11. Optimize conversation history storage
+12. Enhance streaming response handling
 
 ## Known Issues
 1. Hardcoded database connection
@@ -66,4 +76,6 @@
 4. Configuration needs improvement
 5. Security features pending
 6. Rate limiting not implemented
-7. API documentation incomplete 
+7. API documentation incomplete
+8. Conversation history persistence needs optimization
+9. Streaming response handling could be improved 

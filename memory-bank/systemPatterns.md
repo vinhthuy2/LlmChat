@@ -7,6 +7,7 @@ The application follows a clean architecture approach with clear separation of c
    - Minimal API endpoints
    - Request/Response DTOs
    - Dependency injection setup
+   - Streaming response endpoints
 
 2. **Domain Layer** (Chat/)
    - Chat session management
@@ -14,18 +15,22 @@ The application follows a clean architecture approach with clear separation of c
    - Domain models
    - Service interfaces
    - Store interfaces
+   - Conversation history management
 
 3. **Infrastructure Layer** (Infra/)
    - Data persistence
    - Store implementations
    - Cross-cutting concerns
    - Logging system
+   - Database context
 
 4. **Agents Layer** (Agents/)
    - LLM integration
    - Chat agent implementation
    - Streaming support
    - Session management
+   - Conversation history
+   - Deferred message processing
 
 ## Design Patterns
 
@@ -35,18 +40,21 @@ The application follows a clean architecture approach with clear separation of c
 - Direct Entity Framework Core integration
 - SQLite for storage
 - Manages session state and persistence
+- Handles conversation history
 
 ### Service Pattern
 - IChatSessionService defines business logic
 - ChatSessionService implements operations
 - Uses store for data access
 - Handles session management
+- Manages conversation flow
 
 ### Dependency Injection
 - Services registered in Program.cs
 - Interface-based design for loose coupling
 - Constructor injection
 - Scoped lifetime for services
+- Agent registration
 
 ### Logging Pattern
 - Structured logging with Serilog
@@ -56,6 +64,7 @@ The application follows a clean architecture approach with clear separation of c
 - Performance tracking
 - ILoggingService abstraction
 - LoggingService implementation
+- Streaming response logging
 
 ### Testing Pattern
 - MSTest for test framework
@@ -63,6 +72,14 @@ The application follows a clean architecture approach with clear separation of c
 - In-memory database for testing
 - Comprehensive unit tests
 - Integration test support
+- Streaming response tests
+
+### Streaming Pattern
+- Server-Sent Events for streaming
+- Deferred message processing
+- Conversation history management
+- In-memory state tracking
+- Error handling for streams
 
 ## Component Relationships
 
@@ -81,6 +98,8 @@ graph TD
     A --> J[OllamaAgent]
     J --> B
     J --> F
+    J --> K[Conversation History]
+    J --> L[Streaming Handler]
 ```
 
 ## Key Interfaces
@@ -89,6 +108,7 @@ graph TD
 3. `AppDbContext`: Data access abstraction
 4. `ILoggingService`: Logging abstraction
 5. `ILlmAgent`: LLM integration contract
+6. `IOllamaApiClient`: Ollama client contract
 
 ## Error Handling
 - Exception handling in repositories
@@ -96,4 +116,6 @@ graph TD
 - Graceful error responses
 - Session state management
 - Structured error logging
-- Test coverage for error scenarios 
+- Test coverage for error scenarios
+- Streaming error handling
+- Conversation error recovery 

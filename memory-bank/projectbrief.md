@@ -1,7 +1,7 @@
 # LlmChat Project Brief
 
 ## Project Overview
-LlmChat is a .NET-based chat application that integrates with Ollama for LLM-powered conversations. It provides a robust API for chat interactions with support for both synchronous and streaming responses, persistent session storage, and comprehensive logging.
+LlmChat is a .NET-based chat application that integrates with Ollama for LLM-powered conversations. It provides a robust API for chat interactions with support for both synchronous and streaming responses, persistent session storage, and comprehensive logging. The system is specifically designed to support English learning through interactive role-play conversations.
 
 ## Core Requirements
 1. Provide RESTful API endpoints for chat interactions
@@ -14,6 +14,10 @@ LlmChat is a .NET-based chat application that integrates with Ollama for LLM-pow
 8. Support real-time streaming of LLM responses
 9. Implement comprehensive test coverage
 10. Support test-driven development
+11. Enable English learning through role-play
+12. Maintain conversation history
+13. Support deferred message processing
+14. Implement streaming error handling
 
 ## Technical Goals
 1. Clean architecture with clear separation of concerns
@@ -26,6 +30,10 @@ LlmChat is a .NET-based chat application that integrates with Ollama for LLM-pow
 8. Performance optimization
 9. High test coverage
 10. Maintainable test suite
+11. Efficient conversation history management
+12. Reliable streaming response handling
+13. Optimized memory usage
+14. Comprehensive logging coverage
 
 ## Success Criteria
 1. Reliable chat session persistence
@@ -37,4 +45,8 @@ LlmChat is a .NET-based chat application that integrates with Ollama for LLM-pow
 7. Secure and performant API
 8. Well-documented integration points
 9. Efficient testing workflow
-10. Quality assurance standards met 
+10. Quality assurance standards met
+11. Effective language learning support
+12. Engaging role-play experience
+13. Reliable conversation history
+14. Smooth streaming experience 
