@@ -23,9 +23,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=ChatLlm.db"));
 builder.Services.AddSingleton<IChatSessionStore, ChatSessionStore>();
 builder.Services.AddSingleton(OllamaClientFactory.Phi3Client());
-builder.Services.AddScoped<IChatSessionService, ChatSessionService>();
+builder.Services.AddSingleton<IChatSessionService, ChatSessionService>();
 builder.Services.AddSingleton<ILlmAgent, OllamaAgent>();
-builder.Services.AddSingleton<ILlmSupervisory, OllamaSupervisory>();
+builder.Services.AddScoped<ILlmSupervisory, OllamaSupervisory>();
 builder.Services.AddSingleton<ILoggingService, LoggingService>();
 builder.Services.AddCors(options =>
 {
@@ -51,7 +51,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapPost("/api/chat",
-        async (OllamaAgent agent, ChatRequestDto chatRequest) =>
+        async (ILlmAgent agent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
             var answer = await agent.AnswerAsync(chatRequest.Content, sessionId);
@@ -66,7 +66,7 @@ app.MapPost("/api/chat",
     .WithOpenApi();
 
 app.MapPost("/api/chatDefer",
-        (OllamaAgent llmAgent, ChatRequestDto chatRequest) =>
+        (ILlmAgent llmAgent, ChatRequestDto chatRequest) =>
         {
             var sessionId = chatRequest.SessionId ?? Guid.NewGuid();
             llmAgent.DeferAMessageAsync(chatRequest.Content, sessionId);
@@ -75,7 +75,7 @@ app.MapPost("/api/chatDefer",
     .WithOpenApi();
 
 app.MapGet("/api/chatStream",
-        async ([FromQuery] Guid sessionId, OllamaAgent agent, HttpContext httpContext) =>
+        async ([FromQuery] Guid sessionId, ILlmAgent agent, HttpContext httpContext) =>
         {
             httpContext.Response.ContentType = "text/event-stream";
             httpContext.Response.Headers.Append("Cache-Control", "no-cache");
@@ -101,9 +101,9 @@ app.MapGet("/api/chatStream",
     .WithOpenApi();
 
 app.MapPost("/api/supervisory",
-    async (OllamaSupervisory supervisory, OriginalMessageDto originalMessage) =>
+    async (ILlmSupervisory supervisory, OriginalMessageDto originalMessage) =>
     {
-        var answer = await supervisory.ReviseAsync(originalMessage.Content, Guid.NewGuid(), originalMessage.ExtraSystemPrompt);
+        var answer = await supervisory.ReviseAsync(originalMessage.Content, originalMessage.SessionId, originalMessage.ExtraSystemPrompt);
         return Results.Json(new SupervisedMessageDto(answer));
     })
     .WithOpenApi();

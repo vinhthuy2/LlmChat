@@ -9,18 +9,15 @@ namespace LlmChat.Agents;
 public class OllamaSupervisory(IOllamaApiClient chatClient, IChatSessionService chatSessionService, ILoggingService logger) : ILlmSupervisory
 {
     private const string SystemPrompt =
-        "Revise my sentence based on the conversation history, if provided. " +
-        "Strictly preserve the specified sentiment, if provided. " +
-        "Minimize changes to maintain closeness to my original sentence. " +
-        "Respond only with the revised sentence in markdown, without additional information or explanation. " +
-        "Response format: `Revised: <revied_content>`";
+        "Please provide a revised and grammatically accurate rendition of my initial inquiry without additional commentary or follow-ups. "
+        + "You solely provide the polished sentence as requested.\n";
 
-    public Task<string> ReviseAsync(string sentence, Guid sessionId, string? extraSystemPrompt,  bool includeHistory = false)
+    public Task<string> ReviseAsync(string sentence, Guid? sessionId, string? extraSystemPrompt, bool includeHistory = false)
     {
         return SendMessage(sentence, sessionId, extraSystemPrompt, includeHistory).StreamToEndAsync();
     }
 
-    private async IAsyncEnumerable<string> SendMessage(string sentence, Guid sessionId, string? extraSystemPrompt = null, bool includeHistory = false)
+    private async IAsyncEnumerable<string> SendMessage(string sentence, Guid? sessionId, string? extraSystemPrompt = null, bool includeHistory = false)
     {
         var request = new ChatRequest
         {
@@ -31,21 +28,29 @@ public class OllamaSupervisory(IOllamaApiClient chatClient, IChatSessionService 
             },
         };
 
-        List<Message> messages = [new Message(ChatRole.System, SystemPrompt)];
+        List<Message> messages = [new(ChatRole.System, SystemPrompt)];
 
-        var history = await GetSessionHistory(sessionId);
+        var history = "";
 
-        if (history is not null)
+        if (includeHistory && sessionId.HasValue)
         {
-            messages.Add(new Message(ChatRole.System, history));
+            history = await GetSessionHistory(sessionId.Value);
         }
 
-        if (extraSystemPrompt != null)
-        {
-            messages.Add(new Message(ChatRole.System, extraSystemPrompt));
-        }
+        var m = $$"""
+            ```json
+            {
+                "toBeRevised":
+                {
+                    "sentence": "{{sentence}}",
+                    "sentiment": "{{extraSystemPrompt ?? "none"}}",
+                    "conversation_history": "{{history ?? "none"}}"
+                }
+            }
+            ```
+            """;
 
-        messages.Add(new(ChatRole.User, sentence));
+        messages.Add(new Message(ChatRole.User, m));
 
         request.Messages = messages;
 
@@ -64,6 +69,6 @@ public class OllamaSupervisory(IOllamaApiClient chatClient, IChatSessionService 
 
         return chatSession is null
             ? null
-            : $"Conversation History: {chatSession.Content}";
+            : $"Conversation History: {chatSession.Content}\n";
     }
 }

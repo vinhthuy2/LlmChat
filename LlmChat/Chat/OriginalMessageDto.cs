@@ -1,3 +1,6 @@
 namespace LlmChat.Chat;
 
-public record OriginalMessageDto(string Content, string? ExtraSystemPrompt);
+public record OriginalMessageDto(
+    Guid? SessionId,
+    string Content,
+    string? ExtraSystemPrompt);

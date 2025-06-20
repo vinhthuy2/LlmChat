@@ -8,8 +8,8 @@ namespace LlmChat.Agents;
 public class OllamaAgent(IChatSessionService chatSessionService, IOllamaApiClient chatClient, ILoggingService logger) : ILlmAgent
 {
     private const string SystemPrompt =
-        "You are an english learning buddy. " +
-        "We're playing role play. ";
+        "You DON'T speak longer than 2 sentences to keep the conversation interactive. "
+        + "You encourage the conversation going on by short sentences, open questions... in a casual manner.\n";
     private readonly Dictionary<Guid, OllamaSharp.Chat> _conversationHistory = new();
     private readonly Dictionary<Guid, string> _pendingMessages = new();
 
